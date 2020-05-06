@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
+      <script src="https://unpkg.com/vue"></script>
+      <title>TODO App</title>
+      <meta charset="utf-8">
+      <style>
+      li.list-group-item.completed {
+        text-decoration: line-through;
+      }
+      </style>
+   </head>
+   <body>
+      <div id="app" class="container">
+         <nav class="navbar navbar-light bg-light mt-3 mb-3">
+            <a class="navbar-brand" href="#">{{header}}</a>
+         </nav>
+         <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Add todo" aria-label="Add todo"
+              v-model="newTodoItem"
+              @keyup.enter="addTodo"
+            />
+            <div class="input-group-append">
+               <button class="btn btn-outline-primary" type="button" @click="addTodo">Add</button>
+            </div>
+         </div>
+         <div class="row">
+            <div class="col-md-12">
+               <ul class="nav nav-tabs">
+                  <li class="nav-item">
+                     <a class="nav-link" href="javascript:void(0)"
+                     @click="toggleVisibility('all')"
+                     :class="{ active: visibility == 'all' }">
+                       All
+                       <span class="badge badge-pill badge-secondary">{{todoList.length}}</span>
+                     </a>
+                  </li>
+                  <li class="nav-item">
+                     <a class="nav-link" href="javascript:void(0)"
+                     @click="toggleVisibility('active')"
+                     :class="{ active: visibility == 'active' }">Todo
+                      <span class="badge badge-pill badge-primary">{{getTodoCount('active')}}</span>
+                     </a>
+                  </li>
+                  <li class="nav-item">
+                     <a class="nav-link" href="javascript:void(0)"
+                     @click="toggleVisibility('completed')"
+                     :class="{ active: visibility == 'completed' }">Completed
+                       <span class="badge badge-pill badge-danger">{{getTodoCount('completed')}}</span>
+                     </a>
+                  </li>
+               </ul>
+               <div class="well">
+                  <ul id="todoList" class="list-group list-group-flush listarea">
+                     <li class="list-group-item" v-for="item in filteredTodos"
+                        :class="{ completed: item.completed }"
+                     >
+                        <input type="checkbox" v-model="item.completed"/> {{item.title}}
+                        <button class="btn btn-small" style="background-color:transparent;"
+                        @click="removeTodo(item)"
+                        ><i class="fa fa-trash"></i></button>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+         <nav class="navbar navbar-light bg-light mt-3 mb-3">
+            <span class="badge badge-secondary mx-auto">Developed By: Shivam Tailor</span>
+         </nav>
+      </div>
+      <!-- ./container -->
+      <script>
+        // localStorage persistence
+        var STORAGE_KEY = "todos-vuejs-2.0";
+        var todoStorage = {
+          fetch: function() {
+            var todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+            todos.forEach(function(todo, index) {
+              todo.id = index;
+            });
+            todoStorage.uid = todos.length;
+            return todos;
+          },
+          save: function(todos) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+          }
+        };
+
+        // visibility filters
+        var filters = {
+          all: function(todos) {
+            return todos;
+          },
+          active: function(todos) {
+            return todos.filter(function(todo) {
+              return !todo.completed;
+            });
+          },
+          completed: function(todos) {
+            return todos.filter(function(todo) {
+              return todo.completed;
+            });
+          }
+        };
+
+        new Vue({
+          el: '#app',
+          data: {
+            header: 'To Do List',
+            newTodoItem: '',
+            visibility: 'all',
+            todoList: todoStorage.fetch(),
+            /*
+            todoList: [
+              {
+                name: "Hiking",
+                completed: false,
+              },
+              {
+                name: "Paragliding",
+                completed: false,
+              },
+              {
+                name: "Learn Car Driving",
+                completed: false,
+              },
+            ],
+            */
+          },
+          methods: {
+            addTodo: function() {
+                var todoValue = this.newTodoItem && this.newTodoItem.trim();
+                if(todoValue) {
+                  this.todoList.push({
+                    id: todoStorage.uid++,
+                    title: todoValue,
+                    completed: false
+                  });
+                  this.newTodoItem = '';
+                }
+            },
+            removeTodo: function(item) {
+              this.todoList.splice(this.todoList.indexOf(item), 1);
+            },
+            toggleVisibility: function(visibility) {
+                this.visibility = visibility;
+            },
+            getTodoCount: function(visibility) {
+              return filters[visibility](this.todoList).length;
+            },
+          },
+          filters: {
+            pluralize: function(n) {
+              return n === 1 ? "item" : "items";
+            }
+          },
+          computed: {
+            filteredTodos: function() {
+              return filters[this.visibility](this.todoList);
+            },
+            remainingTodo: function() {
+              this.todoList.filter(function(element, index, self) {
+                console.log(element, index, self);
+                return element.completed === true;
+              })
+            }
+          }
+        })
+      </script>
+   </body>
+</html>
