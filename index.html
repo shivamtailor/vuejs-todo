@@ -7,8 +7,14 @@
       <title>TODO App</title>
       <meta charset="utf-8">
       <style>
-      li.list-group-item.completed {
+      li.list-group-item label.completed {
         text-decoration: line-through;
+      }
+      li.list-group-item .edit {
+          display: none;
+      }
+      li.list-group-item.editing .edit {
+      	display: inline-block;
       }
       </style>
    </head>
@@ -41,33 +47,49 @@
                      <a class="nav-link" href="javascript:void(0)"
                      @click="toggleVisibility('active')"
                      :class="{ active: visibility == 'active' }">Todo
-                      <span class="badge badge-pill badge-primary">{{getTodoCount('active')}}</span>
+                      <span class="badge badge-pill badge-danger">{{getTodoCount('active')}}</span>
                      </a>
                   </li>
                   <li class="nav-item">
                      <a class="nav-link" href="javascript:void(0)"
                      @click="toggleVisibility('completed')"
                      :class="{ active: visibility == 'completed' }">Completed
-                       <span class="badge badge-pill badge-danger">{{getTodoCount('completed')}}</span>
+                       <span class="badge badge-pill badge-success">{{getTodoCount('completed')}}</span>
                      </a>
                   </li>
                </ul>
                <div class="well">
                   <ul id="todoList" class="list-group list-group-flush listarea">
                      <li class="list-group-item" v-for="item in filteredTodos"
-                        :class="{ completed: item.completed }"
+                        :key="item.id"
+                        :class="{ editing: item == editedTodo }"
                      >
-                        <input type="checkbox" v-model="item.completed"/> {{item.title}}
-                        <button class="btn btn-small" style="background-color:transparent;"
-                        @click="removeTodo(item)"
-                        ><i class="fa fa-trash"></i></button>
+                        <input type="checkbox" title="Click to complete" v-model="item.completed"/>
+                        <label title="Double click to edit"
+                        @dblclick="editTodo(item)"
+                        :class="{ completed: item.completed, 'd-none': item == editedTodo }"
+                        >{{item.title}}</label>
+                        <input
+                          class="edit"
+                          type="text"
+                          v-model="item.title"
+                          v-item-focus="item == editedTodo"
+                          @blur="doneEdit(item)"
+                          @keyup.enter="doneEdit(item)"
+                          @keyup.esc="cancelEdit(item)"
+                        />
+                        <button class="btn" title="Delete" style="background-color:transparent;"
+                        @click="removeTodo(item)"><i class="fa fa-trash"></i></button>
                      </li>
+                     <hr/>
+                     <button class="btn btn-sm" @click="removeCompleted"><i class="fa fa-trash"></i> Delete all completed</button>
+
                   </ul>
                </div>
             </div>
          </div>
          <nav class="navbar navbar-light bg-light mt-3 mb-3">
-            <span class="badge badge-secondary mx-auto">Developed By: Shivam Tailor</span>
+            <span class="badge badge-secondary mx-auto">Developed By: <a href="https://github.com/shivamtailor/vuejs-todo" target="_blank" style="color:wheat;">Shivam Tailor</a></span>
          </nav>
       </div>
       <!-- ./container -->
@@ -111,6 +133,7 @@
             header: 'To Do List',
             newTodoItem: '',
             visibility: 'all',
+            editedTodo: null,
             todoList: todoStorage.fetch(),
             /*
             todoList: [
@@ -150,6 +173,34 @@
             getTodoCount: function(visibility) {
               return filters[visibility](this.todoList).length;
             },
+
+
+
+            editTodo: function(item) {
+              this.beforeEditCache = item.title;
+              this.editedTodo = item;
+            },
+
+            doneEdit: function(item) {
+              if (!this.editedTodo) {
+                return;
+              }
+              this.editedTodo = null;
+              item.title = item.title.trim();
+              if (!item.title) {
+                this.removeTodo(item);
+              }
+            },
+
+            cancelEdit: function(item) {
+              this.editedTodo = null;
+              item.title = this.beforeEditCache;
+            },
+
+            removeCompleted: function() {
+              this.todoList = filters.active(this.todoList);
+            }
+
           },
           filters: {
             pluralize: function(n) {
@@ -165,6 +216,13 @@
                 console.log(element, index, self);
                 return element.completed === true;
               })
+            }
+          },
+          directives: {
+            "item-focus": function(el, binding) {
+              if (binding.value) {
+                el.focus();
+              }
             }
           }
         })
